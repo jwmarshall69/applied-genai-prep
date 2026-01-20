@@ -1,0 +1,41 @@
+# Week 1 — Generative AI Landscape
+
+## 1) Mental Model Summary (your words)
+Write 10–15 sentences explaining how an LLM produces text.
+
+---
+
+## 2) Key Definitions (with examples)
+| Term | Definition | Why it matters | Example |
+|---|---|---|---|
+| Token |  |  |  |
+| Context window |  |  |  |
+| Embedding |  |  |  |
+| Attention |  |  |  |
+| Transformer |  |  |  |
+| Temperature |  |  |  |
+
+---
+
+## 3) Prompt Experiment Log (10 experiments)
+Use this table for each experiment.
+
+### Experiment 1
+- **Goal:**
+- **Prompt:**
+- **Model settings (if any):**
+- **Observed behavior:**
+- **What surprised me:**
+- **Failure mode (if any):**
+- **Mitigation (what I’d do next time):**
+
+(Repeat for Experiments 2–10)
+
+---
+
+## 4) What I now understand (5 bullets)
+- 
+- 
+- 
+- 
+- 
