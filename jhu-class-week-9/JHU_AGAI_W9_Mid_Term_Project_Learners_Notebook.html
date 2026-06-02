@@ -1,0 +1,1472 @@
+
+￼
+
+Mid-term Project
+Your AI Email Secretary
+
+Business Problem - Automating Email Prioritization & Responses
+
+￼
+
+Alex Carter, a seasoned Senior Manager in Software Development at Orion Tech Solutions, plays a pivotal role in ensuring the smooth execution of multiple IT projects. Orion Tech Solutions, a mid-sized IT services company, prides itself on delivering cutting-edge software solutions to global clients, balancing innovation with operational efficiency.
+With years of experience in software engineering and project management, Alex’s day is a mix of strategic planning, problem-solving, and stakeholder coordination. Managing a diverse portfolio of projects, Alex works closely with internal teams, vendors, and clients, ensuring deliverables meet expectations while navigating technical and organizational challenges.
+
+The Challenge
+A high-profile client has recently entrusted Orion Tech Solutions with the development of a next-generation cloud security platform. While the project holds immense potential for growth and recognition, it also brings complexity, tight deadlines, and high stakeholder expectations.
+As the project nears critical milestones, Alex faces multiple challenges:
+	•	Ensuring timely delivery while balancing resource constraints.
+	•	Managing escalations related to security vulnerabilities discovered during testing.
+	•	Communicating with clients, vendors, and internal teams to align expectations.
+	•	Handling unexpected system downtimes due to scheduled IT maintenance.
+	•	Addressing compliance concerns raised by the legal team on certain third-party integrations.
+With multiple stakeholders relying on Alex’s leadership, clear and effective communication is essential. Every email, meeting, and decision made plays a role in determining the project's success.
+
+The Case Study
+This case study explores the real-world challenges Alex encounters, highlighting how well-structured communication can help in:
+	1	Crisis Management – Handling security breaches and system outages.
+	2	Client Relations – Effectively communicating progress and addressing feedback.
+	3	Team Coordination – Ensuring alignment between development, security, and operations teams.
+	4	Strategic Decision-Making – Navigating legal, financial, and technical roadblocks.
+Through realistic scenarios and email exchanges, we will examine how Alex can leverage professional communication strategies to tackle these challenges head-on, ensuring project success and business continuity.
+
+￼
+
+Objective
+The goal of this project is to create a Generative AI-powered system that:
+	1	Summarize yesterday’s emails into actionable insights. [Yesterbox Approach]
+	2	Prioritizes emails based on urgency, sender, and context.
+	3	Drafts context-aware responses, reducing manual effort.
+
+LLM Setup
+In [ ]:
+!pip install -q openai==1.61.1
+
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 0.0/463.1 kB ? eta -:--:--
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╸ 460.8/463.1 kB 18.7 MB/s eta 0:00:01
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 463.1/463.1 kB 13.0 MB/s eta 0:00:00
+
+	•	The config.json file should contain API_KEY and API Base URL provided by OpenAI.
+	•	You need to insert your actual API keys and endpoint URL obtained from your Olympus account. Refer to the OpenAI Access Token documentation for more information on how to generate and manage your API keys.
+	•	This code reads the config.json file and extracts the API details.
+	▪	The API_KEY is a unique secret key that authorizes your requests to OpenAI's API.
+	▪	The OPENAI_API_BASE is the API Base URL where the model will process your requests.
+
+What To Do?
+	•	Use the sample config.json file provided.
+	•	Add their OpenAI API Key and Base URL to the file.
+	•	The config.json should look like this: {
+	•	      "API_KEY": "your_openai_api_key_here",
+	•	      "OPENAI_API_BASE": "https://aibe.mygreatlearning.com/openai/v1"
+	•	    }
+	•	
+In [3]:
+# @title Loading the `config.json` file
+import json, os
+
+# Load the JSON file and extract values
+file_name = 'config.json'
+with open(file_name, 'r') as file:
+    config = json.load(file)
+    os.environ['OPENAI_API_KEY']  = config.get("API_KEY") # Loading the API Key
+    os.environ["OPENAI_BASE_URL"] = config.get("OPENAI_API_BASE") # Loading the API Base Url
+In [5]:
+model_name = "gpt-4o-mini"
+
+	•	The API key and base URL are stored in environment variables to avoid hardcoding sensitive information in the code.
+	•	The OpenAI() object helps us interact with the model for prompt generation.
+In [4]:
+from openai import OpenAI
+
+# Initialize OpenAI client
+client = OpenAI()
+
+	•	This function helps interact with the AI model using two prompts:
+	▪	System Prompt: Provides background instructions to the model on how to behave.
+	▪	User Prompt: Contains the user's query or task.
+	•	The client.chat.completions.create() method sends the request to the GPT model.
+	•	The temperature=0 setting ensures the response is deterministic and consistent.
+	•	If any error occurs, the function will print the error message.
+In [7]:
+# @title LLM function
+# @markdown Once the API details are filled, the notebook will automatically load the configuration, and learners can generate model outputs using the llm() function.
+
+
+def llm(system_prompt, user_prompt):
+  try:
+      # Craft the messages to pass to chat.completions.create
+      prompt = [
+          {'role':'system', 'content': system_prompt},
+          {'role': 'user', 'content': user_prompt}
+      ]
+
+      response = client.chat.completions.create(
+          model=model_name,
+          messages=prompt,
+          temperature=0
+      )
+
+      return response.choices[0].message.content.strip()
+
+  except Exception as e:
+      prediction = f'Sorry, I encountered the following error: \n {e}'
+      print(prediction)
+
+Data Setup
+
+Background
+Name: Alex Carter Company: Orion Tech Solutions (A mid-sized IT services company) Role: Senior Manager, Software Developement
+About You
+Alex oversees multiple projects related to software development and IT infrastructure. Your role involves coordinating with stakeholders, ensuring timely delivery, handling escalations, and approving critical project-related decisions. You work with internal teams, vendors, and clients, making communication a crucial part of your job.
+
+Objective: Load the dataset containing email records and apply the Yesterbox approach to filter emails received on the previous day.
+In [8]:
+# @title Step 1: Load the Dataset
+# Data Loading
+
+import pandas as pd
+df = pd.read_csv("/content/Alex_emails_march_04.csv", index_col="email_id", encoding='latin-1')      #Add the data file location
+df
+Out[8]:
+
+date_received
+sender
+subject
+body
+main_recipient
+email_id
+
+
+
+
+
+1
+3/3/2025
+Julia Martin
+Approval Request: Budget Approval Needed by EOD
+Hi Alex,\n\nI hope you're doing well. As we ap...
+Alex
+2
+3/3/2025
+Fiona White
+Are Your APIs Secure? Reddit & Discord Sound t...
+Hi Alex,\n\nA heated Discord discussion in the...
+Alex
+3
+3/3/2025
+Samantha Lee
+Approval Needed: Project Scope Adjustment for ...
+Hi Alex,\n\nWeve encountered an unexpected AP...
+Alex
+4
+3/3/2025
+James Patel
+Subject: Daily Update  Project Titan (March 3)
+Hey Alex,\n\nQuick update on Project Titan for...
+Alex
+5
+3/3/2025
+David Whitmore
+[URGENT] Dashboard Syncing Issues  Production...
+Hey Alex,\n\nWeve got a big issue right nowl...
+Alex
+6
+3/3/2025
+Lisa Taylor
+Quick Check-In  Frontend Updates
+Hi Alex,\n\nProgress today:\n\n1. Wrapped up U...
+Alex
+7
+3/3/2025
+Nathan Cole
+Approval Request: Additional AWS Resources for...
+Hi Alex,\n\nAs we scale up Project Orion, our ...
+Alex
+8
+3/3/2025
+David Kurien
+Blocking Issue Alert  Client Data Sync Failing
+Hi Alex,\n\nWeve got a major problemclient t...
+Alex
+9
+3/3/2025
+Mark Swarlos
+Daily Update  API Migration (March 3)
+CC: Tom Richardson (QA Lead), Orion Dev Team\n...
+Alex
+10
+3/3/2025
+Tanya Patel
+URGENT: Approval Needed for 2-Week Extension o...
+CC: John Spencer (PM), Lisa Tan (QA Lead)\n\nH...
+Alex
+11
+3/3/2025
+David Whitmore
+System Crashing During Shift Changes  URGENT
+CC: Michael Reynolds (Client Success Manager),...
+Alex
+12
+3/3/2025
+Emily Johnson
+Update  Bug Fixes & Refactoring
+Hey Alex,\n\nNot a lot of new things today, bu...
+Alex
+13
+3/3/2025
+Jake Domang
+"10X Your Dev Team's Productivity with AI  Fr...
+Hi Alex,\n\nAre your developers spending too m...
+Alex
+14
+3/3/2025
+Bob Smith
+?? Security Risk  Critical Patch Delayed
+Hi Alex,\n\nWe have a high-risk delaythe secu...
+Alex
+15
+3/3/2025
+George Harris
+Supply Chain Attacks Are Increasing  Are You ...
+Hi Alex,\n\nThe SolarWinds breach and Log4Shel...
+Alex
+16
+3/3/2025
+Anna Karvos
+"Revolutionary Cloud Hosting at 90% Off  ACT ...
+Hey Alex,\n\nTired of slow, expensive cloud ho...
+Alex
+17
+3/3/2025
+James Wildkorn
+"Alex, This Rolex Would Look GREAT on Your Wri...
+Hey Alex,\n\nYou've worked hardit's time to r...
+Alex
+18
+3/4/2025
+Mark Davidson
+Is Your Cybersecurity Strategy Up to Date?
+Alex,\n\n75% of companies experience a cyberat...
+Daniel
+19
+3/3/2025
+David Whitmore
+URGENT: Production Halt  Machine Control Syst...
+CC: Michael Reynolds (Client Success Manager)\...
+Alex
+20
+3/4/2025
+Kevin Tran
+Follow-up: Approval for Vendor API Licensing Fee
+Hi Alex,\n\nJust checking in on the API licens...
+Alex
+21
+3/4/2025
+Daniel Wong
+Approval Request: Hiring a Senior Backend Deve...
+CC: Olivia Chen (HR), Daniel Wong (DevOps)\n\n...
+Alex
+22
+3/3/2025
+Lisa Taylor
+EBR Meeting Invite  Sentinel Cyber Inc. (Micr...
+?? Date: March 14, 2025\n? Time: 2:00 PM  3:3...
+Mark Whitman
+23
+3/4/2025
+Rachel Thompson
+[URGENT] Patient Data Sync Issues  Compliance...
+Alex,\n\nWe just discovered that patient vital...
+Alex
+24
+3/4/2025
+Mark Davidson
+RE: Scheduling Q1 Executive Business Review (E...
+Hey Alex,\n\nThanks for reaching out! March 14...
+Alex
+25
+3/4/2025
+Jake Dawson
+Will Low-Code Replace Traditional Dev?
+Hi Alex,\n\nThe Low-Code/No-Code movement is g...
+Alex
+26
+3/3/2025
+Alex Carter
+Scheduling Q1 Executive Business Review (EBR) ...
+Hi Mark,\n\nHope you're doing well! Were reac...
+Mark Davidson
+27
+3/3/2025
+Mark Davidson
+[High Priority] Authentication Failing for Mul...
+Alex,\n\nWe have an authentication issuemulti...
+Alex
+28
+3/4/2025
+Rachel Thompson
+Can Someone Explain the Repeated Downtimes?
+Hey,\n\nWeve had three system outages in the ...
+Emily
+29
+3/3/2025
+Yelen Carter
+Review Needed: Weekly Team Status Update
+Hi Alex,\n\nHere's the weekly status update fo...
+Alex
+30
+3/3/2025
+Liam Ross
+Approval Needed: Purchase of Design Tool for E...
+Hi Sarah,\n\nThe engineering team is requestin...
+Sarah
+31
+3/3/2025
+Mark Davidson
+Security Patch Caused System Instability?
+Alex,\n\nAfter the latest security patch, our ...
+Alex
+32
+3/3/2025
+Ethan Brown
+Update: Employee Engagement Survey Reminder (33)
+Hi Daniel,\n\nThis is a gentle reminder to com...
+Daniel
+33
+3/3/2025
+Ethan Brown
+EBR Meeting Invite  Acme Manufacturing (Googl...
+?? Date: March 18, 2025\n? Time: 3:00 PM  4:3...
+Alex
+34
+3/3/2025
+Rachel Lim
+URGENT: Approval for Security Audit Vendor  T...
+Hi Alex,\n\nWe still need approval for the sec...
+Alex
+35
+3/3/2025
+Sarah Lin
+[Project Nexus] Weekly Update  Finalizing ML ...
+CC: Alex Carter, Orion Tech Solutions Team\n\n...
+John Mitchell
+36
+3/3/2025
+David Whitmore
+URGENT: Critical System Downtime  Immediate A...
+Hi Alex,\n\nWere experiencing a major outage ...
+Alex
+37
+3/3/2025
+Bob Smith
+Follow-Up: Server Downtime - Critical Fix Requ...
+Hi Daniel,\n\nWe have encountered unexpected s...
+Daniel
+38
+3/3/2025
+Julia Martin
+Escalation  Valve Healthcare (Zoom)
+?? Date: March 6, 2025\n? Time: 11:00 AM  12:...
+Alex
+39
+3/3/2025
+Kevin Tran
+Approval Request: Dev Environment Upgrade for ...
+Hi Alex,\n\nThe build pipeline is taking 45+ m...
+Alex
+40
+3/3/2025
+John Mitchell
+RE: [Project Nexus] Weekly Update  ML Model &...
+Hey Sarah,\n\nThis is great progress! Some qui...
+Sarah Lin
+41
+3/3/2025
+Daniel Goodpacker
+RE: Scheduling Q1 Executive Business Review (E...
+Hey Alex,\n\nThanks for reaching out. Lets go...
+Alex
+42
+3/3/2025
+Sarah Mitchell
+URGENT: Overdue Invoice Approval for Cloud Ser...
+Hi Alex,\n\nThe invoice from CloudOps Solution...
+Alex
+43
+3/3/2025
+Mark Davidson
+Firewall Logs Disappeared  Whats Going On?
+Hey Alex,\n\nWe noticed that firewall logs fro...
+Daniel
+44
+3/3/2025
+Rachel Thompson
+URGENT: Medication Alerts Not Firing  This is...
+Alex,\n\nWe have a serious issuethe automated...
+Alex
+45
+3/3/2025
+Sarah Kaur
+Alex, Youve Been Chosen for Our CEO Mastermin...
+Dear Alex,\n\nAs a senior leader in tech, you'...
+Alex
+46
+3/3/2025
+Julia Martin
+Follow-Up: Q1 Executive Business Review  Valv...
+CC: Alex Carter, Orion Leadership Team\n\nHi R...
+Rachel
+47
+3/3/2025
+Olivia Chen
+Approval Request: Travel Budget for AWS Summit...
+CC: Olivia Chen (HR), Daniel Wong (DevOps)\n\n...
+Alex
+48
+2/26/2025
+Sarah Lin
+RE: [Project Nexus] Weekly Update  ML Model &...
+Hi John,\n\nAppreciate the feedback! Heres wh...
+John Mitchell
+49
+3/3/2025
+LuckyDraw
+You Won a Free iPhone 15 Pro! ?? Click to Claim
+CONGRATULATIONS ALEX!\n\nYou've been randomly ...
+Michael
+50
+3/3/2025
+Helen Paul
+Daily Stand-up  Frontend Team (Microsoft Teams)
+?? Date: March 4, 2025\n? Time: 11:00 AM  11:...
+Alex
+51
+3/3/2025
+Mark Davidson
+RE: [Security AI Module] Weekly Update  Phase...
+Hey Nathan,\n\nThanks for the update. A few th...
+Nathan Cole
+52
+3/3/2025
+John Mitchell
+RE: [Project Nexus] Weekly Update  Phase 2 Pr...
+CC: Alex Carter, , Orion Tech Team\n\nHey Sara...
+Sarah Lin
+53
+3/4/2025
+Max Jeremy
+Automate Your Software Development in 2025  A...
+Hey Alex,\n\nWhat if you could eliminate 80% o...
+Alex
+54
+3/3/2025
+Dev Team, Orion
+Must-Read: Top 5 Dev Tools of 2025!
+Hey Alex,\n\nDon't get left behind! These are ...
+Alex
+55
+3/3/2025
+Alex
+? [EHR Integration] Go-Live Confirmed!
+Ian,\n\nGreat news! Encounter Notes now sync i...
+Ian Adams
+56
+3/3/2025
+Ken Adasmo
+Update: HR Policy Update - Acknowledgment Requ...
+Hi Sophia,\n\nThis is regarding HR Policy Upda...
+Sophia
+57
+3/3/2025
+Alice Johnson
+Pending Approval  Invoice Dispute (Microsoft ...
+?? Date: March 5, 2025\n? Time: 4:00 PM  4:45...
+Alex
+58
+3/3/2025
+Mark Davidson
+RE: [Security AI Module] Progress Update & Fin...
+Nathan,\n\nLooks solid! 9.8% false positives i...
+Nathan Cole
+59
+3/3/2025
+Jessica Hector
+Get Featured in Forbes 2025!
+Hey Alex,\n\nWere selecting top tech leaders ...
+Alex
+60
+3/3/2025
+Nathan Ellis
+Urgent: Performance Degradation in Production ...
+CC: Emma Brooks (Lead Developer), Derek Chan (...
+Alex
+
+
+In [9]:
+# @title Step 2: Apply Yesterbox Filtering
+# @markdown The Yesterbox approach involves processing emails from the previous day first before tackling today's emails.
+
+# @markdown For this dataset, consider today's date as 4th March 2025.
+
+# @markdown We filter the dataset to only include emails received on 3rd March 2025 (yesterday)
+# (Yesterbox Approach)(Today: 4 march)
+
+
+
+from datetime import datetime, timedelta
+
+yesterday_date = pd.to_datetime("3/3/2025").strftime('%m/%d/%Y')
+
+df['date_received'] = pd.to_datetime(df['date_received']).dt.strftime('%m/%d/%Y')
+
+yesterday_emails = df[df['date_received'] == yesterday_date].reset_index(drop=True)
+print(f"Filtered Emails Count: {len(yesterday_emails)}")
+
+Filtered Emails Count: 51
+In [10]:
+df.shape
+Out[10]:
+(60, 5)
+In [11]:
+# Here we see only 51 emails, as in 10 email had the date of 4th March 2025
+yesterday_emails.info()
+
+<class 'pandas.core.frame.DataFrame'>
+RangeIndex: 51 entries, 0 to 50
+Data columns (total 5 columns):
+ #   Column          Non-Null Count  Dtype 
+---  ------          --------------  ----- 
+ 0   date_received   51 non-null     object
+ 1   sender          51 non-null     object
+ 2   subject         51 non-null     object
+ 3   body            51 non-null     object
+ 4   main_recipient  51 non-null     object
+dtypes: object(5)
+memory usage: 2.1+ KB
+
+TASK - Categorization of emails
+Your task is to write the system_prompt & user_prompt for classifying all the emails into one of the below pre-defined categories.
+	1	Urgent & High-Priority Emails:
+	•	Emails that require immediate action and must be addressed today.
+	2	Deadline-Driven Emails:
+	•	Time-sensitive emails or meeting requests that need attention today.
+	3	Routine Updates & Check-ins:
+	•	Emails that require review and acknowledgment without immediate action.
+	4	Non-Urgent Informational Emails:
+	•	Emails that can be deferred or delegated to another time or person.
+	5	Personal & Social Emails:
+	•	Emails that can be reviewed optionally at a later time.
+	6	Spam/Unimportant Emails:
+	•	Emails that are not relevant and should be filtered out.
+Note: Your response should include only one of the above six specified categories and nothing else.
+Example Email : 'You Won a Free iPhone 15 Pro! ?? Click to Claim'
+Expected Response : 'Spam/Unimportant Emails'
+
+
+￼
+In [12]:
+# @title Code to add categories to the dataset
+categories = ['Urgent & High-Priority Emails',
+              'Deadline-Driven Emails',
+              'Routine Updates & Check-ins',
+              'Non-Urgent Informational Emails',
+              'Personal & Social Emails',
+              'Spam/Unimportant Emails']
+In [13]:
+system_prompt = """
+
+You are an assistant that classifies business emails into exactly one of six categories:
+1) Urgent & High-Priority Emails
+2) Deadline-Driven Emails
+3) Routine Updates & Check-ins
+4) Non-Urgent Informational Emails
+5) Personal & Social Emails
+6) Spam/Unimportant Emails
+
+Rules:
+- Return ONLY the exact category text from the list above—no extra words.
+- Consider urgency, deadlines, requested actions, sender role, and time sensitivity.
+- If the email is marketing, a giveaway, irrelevant, or clearly not work-related, choose “Spam/Unimportant Emails.”
+- If a specific deadline or today’s time pressure is explicit, prefer “Deadline-Driven Emails.”
+- If immediate action or production/system risk is implied, prefer “Urgent & High-Priority Emails.”
+
+
+"""
+In [14]:
+user_prompt = f"""
+
+Classify the following email into exactly one category from the allowed list above.
+Return ONLY the category text.
+
+Email:
+
+
+"""
+In [15]:
+# @title Categorizing the emails
+from tqdm import tqdm  # Import the tqdm library for the progress bar
+
+# Ensure the 'category' column exists in the DataFrame
+if 'category' not in yesterday_emails.columns:
+  yesterday_emails['category'] = None  # Create the column if it does not exist
+
+
+for index, row in tqdm(yesterday_emails.iterrows(), total=df.shape[0], desc='Processing emails'):
+  prompt = f"""{user_prompt}
+    Please find the attached email below from yesterday that need to be analyzed:
+    ```
+    {row.to_string()}
+    ```
+  """
+
+  category_by_llm = llm(system_prompt, prompt)
+
+  # Append the category generated by the LLM to the 'category' column in the same row
+  if category_by_llm in categories:
+    yesterday_emails.at[index, 'category'] = category_by_llm
+  else:
+    yesterday_emails.at[index, 'category'] = ""
+
+Processing emails:  85%|████████▌ | 51/60 [00:40<00:07,  1.25it/s]
+In [16]:
+# Display the DataFrame which has categories
+yesterday_emails.head()
+Out[16]:
+
+date_received
+sender
+subject
+body
+main_recipient
+category
+0
+03/03/2025
+Julia Martin
+Approval Request: Budget Approval Needed by EOD
+Hi Alex,\n\nI hope you're doing well. As we ap...
+Alex
+Deadline-Driven Emails
+1
+03/03/2025
+Fiona White
+Are Your APIs Secure? Reddit & Discord Sound t...
+Hi Alex,\n\nA heated Discord discussion in the...
+Alex
+Routine Updates & Check-ins
+2
+03/03/2025
+Samantha Lee
+Approval Needed: Project Scope Adjustment for ...
+Hi Alex,\n\nWeve encountered an unexpected AP...
+Alex
+Urgent & High-Priority Emails
+3
+03/03/2025
+James Patel
+Subject: Daily Update  Project Titan (March 3)
+Hey Alex,\n\nQuick update on Project Titan for...
+Alex
+Routine Updates & Check-ins
+4
+03/03/2025
+David Whitmore
+[URGENT] Dashboard Syncing Issues  Production...
+Hey Alex,\n\nWeve got a big issue right nowl...
+Alex
+Urgent & High-Priority Emails
+
+
+Task 1: Awareness of your email: Get to know the detailed summary of your email received
+
+1A. Executive Dashboard (Top-Level Summary of Yesterday’s Inbox)
+Note: Follow the instructions carefully and complete the missing sections.
+
+￼
+
+Alex’s inbox is a delicate balance of urgent action items, strategic decisions, and routine updates. He must prioritize effectively—focusing on high-impact emails first, ensuring compliance with deadlines, and delegating less critical tasks to his team.
+
+In this step, you will generate a high-level summary of the emails received using the AI Email Secretary. The AI will categorize emails into distinct categories and generate actionable insights.
+
+TASK
+Write the system_prompt & user_prompt that will guide the AI model to generate an executive summary based on the filtered data (yesterday_emails). The prompt should:
+	1	Count the number of emails per category.
+	2	Provide a final AI summary that highlights the number of critical emails requiring immediate action and the emails which can be handled later.
+In [17]:
+# @title System Prompt
+# Write your system prompt here
+system_prompt = """
+
+You are a precise operations analyst. Summarize yesterday’s inbox for Alex Carter.
+
+Requirements:
+- First: a bullet list with counts per category (use the six exact category names).
+- Then: a short executive summary highlighting critical items (Urgent & High-Priority + Deadline-Driven), suggested “first 3 things to do,” and what can be deferred or delegated.
+- Be concise (≤ 180 words total).
+- Do not include any content not in the provided data.
+
+
+"""
+In [18]:
+# @title User Prompt
+# Write your user prompt here
+user_prompt = f"""
+
+Using ONLY the provided DataFrame `yesterday_emails` (already filtered to yesterday), produce:
+1) Counts per category (the six exact category names).
+2) A brief executive summary noting the number of “critical” emails = Urgent & High-Priority + Deadline-Driven, suggested first actions, and deferrable items.
+
+DataFrame:
+
+
+
+Below is the attached DataFrame for analysis:
+```
+{yesterday_emails.to_string()}
+```
+"""
+In [20]:
+# @title  Calling the model and display the summary
+
+
+response_1 = llm(system_prompt, user_prompt)        # llm is the model using gpt-4o-mini
+response_1
+
+from IPython.display import display, Markdown
+display(Markdown(response_1))
+
+Counts per Category
+	•	Urgent & High-Priority Emails: 15
+	•	Deadline-Driven Emails: 6
+	•	Routine Updates & Check-ins: 15
+	•	Spam/Unimportant Emails: 10
+Executive Summary
+There are a total of 21 critical emails categorized as either Urgent & High-Priority (15) or Deadline-Driven (6). Suggested first actions include addressing the most pressing issues such as system downtimes and urgent approvals. Items that can be deferred include routine updates and non-urgent requests, allowing focus on critical tasks that require immediate attention.
+
+Sample Output Example
+A structured summary with the number of emails in each category and key action points.
+
+￼
+
+1B. Urgent Emails from Yesterday (🛑 Must-Do First Today)
+Note: Follow the instructions carefully and complete the missing sections.
+
+￼
+
+
+
+Urgent & High-Priority Emails (Requires Immediate Action)
+Examples of Expected Outputs
+	•	Subject: URGENT: Critical System Downtime – Immediate Attention Required Received: 03/03/2025 Sender Name: David Whitmore Summary: David reports a major outage with the Orion Analytics Dashboard, impacting multiple manufacturing lines. Next Step: Provide an immediate resolution or workaround by 12 PM EST today and escalate to the engineering team if necessary.
+
+	•	Subject: URGENT: Medication Alerts Not Firing – This is Dangerous Received: 03/03/2025 Sender Name: Rachel Thompson Summary: Rachel highlights a serious issue where automated medication alerts are not firing for ICU patients, posing a safety risk. Next Step: Join the emergency call and prioritize fixing the issue immediately.
+
+	•	Subject: Approval Request: Travel Budget for AWS Summit 2025 Received: 03/03/2025 Sender Name: Olivia Chen Summary: Olivia requests approval for travel expenses for two team members to attend the AWS Summit 2025. Next Step: Review the request and confirm if you can proceed with the budget approval.
+
+TASK
+Write the system_prompt & user_prompt that will guide the AI to write a Summary and the Next Step to be taken for the respective email, for all urgent and high-priority emails from the filtered data (urgent_emails)
+Ensure each email summary follows this format:
+	•	Subject:
+	•	Received:
+	•	Sender Name:
+	•	Summary:
+	•	Next Step: (it should be particular to that email)
+Note :- Apply instructions regarding Yesterbox Rule : Confirm that these emails were received yesterday and are part of today's to-do list.
+In [21]:
+# @title System Prompt
+
+# Write your system prompt here
+system_prompt = """
+
+You extract only yesterday’s Urgent & High-Priority Emails from the provided DataFrame.
+
+Output format for each match:
+- Subject:
+- Received: (MM/DD/YYYY)
+- Sender Name:
+- Summary: (1–2 sentences, factual)
+- Next Step: (1 actionable step specific to that email)
+
+Rules:
+- Only include emails in category “Urgent & High-Priority Emails.”
+- Confirm they are from yesterday (“Yesterbox” rule).
+- No invented details; rely solely on provided fields.
+
+
+
+"""
+
+Question: Construct the user_prompt that will pass the filtered dataset to the AI model for identifying urgent emails.
+In [22]:
+# Filtering out the emails that are urgent and high-priority
+urgent_emails = yesterday_emails[yesterday_emails['category'] == 'Urgent & High-Priority Emails']
+In [23]:
+# @title User Prompt
+
+# Write your user prompt here
+user_prompt = f"""
+
+
+From the provided `yesterday_emails`, list only Urgent & High-Priority Emails using the required format. Do not include any other categories.
+
+DataFrame:
+
+
+
+Below is the attached DataFrame, which contains all the emails that needs to be summarized:
+```
+{urgent_emails.to_string()}
+```
+"""
+In [24]:
+# @title  Calling the model and display the summary
+
+response_2 = llm(system_prompt, user_prompt)
+
+from IPython.display import display, Markdown
+display(Markdown(response_2))
+
+Here are the Urgent & High-Priority Emails from yesterday:
+	•	Subject: Approval Needed: Project Scope Adjustment for Acme Corp Integration
+	•	Received: 03/03/2025
+	•	Sender Name: Samantha Lee
+	•	Summary: Samantha Lee is requesting confirmation to proceed with a project scope adjustment due to an unexpected API limitation with Acme Corp's system. The proposed change involves implementing a message queue-based approach to maintain the original timeline.
+	•	Next Step: Confirm if the adjustment can proceed.
+	•	Subject: [URGENT] Dashboard Syncing Issues – Production Metrics Missing
+	•	Received: 03/03/2025
+	•	Sender Name: David Whitmore
+	•	Summary: David Whitmore reports that live production metrics are not syncing properly on the Orion Analytics Dashboard, causing data gaps in yesterday's batch reports. He requests confirmation of the issue and a resolution within 24 hours.
+	•	Next Step: Confirm the issue and provide an update within 24 hours.
+	•	Subject: Approval Request: Additional AWS Resources for Project Orion
+	•	Received: 03/03/2025
+	•	Sender Name: Nathan Cole
+	•	Summary: Nathan Cole is requesting approval to provision additional AWS resources as the current usage has hit 90% capacity, which could lead to performance bottlenecks. He outlines the proposed solution and its impact on delivery.
+	•	Next Step: Approve the additional AWS resources by March 7.
+	•	Subject: Blocking Issue Alert – Client Data Sync Failing
+	•	Received: 03/03/2025
+	•	Sender Name: David Kurien
+	•	Summary: David Kurien alerts that client transaction data is failing to sync for 20% of requests, likely due to a code or infrastructure change after the last deployment. He requests an action plan to resolve the issue.
+	•	Next Step: Determine whether to roll back the deployment or wait to isolate the root cause.
+	•	Subject: URGENT: Approval Needed for 2-Week Extension on Acme Corp Deployment
+	•	Received: 03/03/2025
+	•	Sender Name: Tanya Patel
+	•	Summary: Tanya Patel is requesting a two-week extension on the Acme Corp deployment due to missed deadlines caused by internal team conflicts. She emphasizes the importance of avoiding rushed delivery.
+	•	Next Step: Decide how to proceed with the extension request.
+	•	Subject: System Crashing During Shift Changes – URGENT
+	•	Received: 03/03/2025
+	•	Sender Name: David Whitmore
+	•	Summary: David Whitmore reports that the Orion Manufacturing System is crashing during shift changes, preventing operators from logging in and causing operational delays. He requests immediate assistance.
+	•	Next Step: Assign someone from the team to investigate the issue.
+	•	Subject: ?? Security Risk – Critical Patch Delayed
+	•	Received: 03/03/2025
+	•	Sender Name: Bob Smith
+	•	Summary: Bob Smith informs that a critical security patch rollout has been delayed due to dependency conflicts, exposing the system to vulnerabilities. He seeks guidance on how to proceed.
+	•	Next Step: Decide whether to push the patch with risks or delay further.
+	•	Subject: URGENT: Production Halt – Machine Control System Unresponsive
+	•	Received: 03/03/2025
+	•	Sender Name: David Whitmore
+	•	Summary: David Whitmore reports a critical issue where the Orion Machine Control System is unresponsive, halting production. He requests immediate attention and a call to discuss.
+	•	Next Step: Call David Whitmore immediately to address the issue.
+	•	Subject: [High Priority] Authentication Failing for Multiple Users
+	•	Received: 03/03/2025
+	•	Sender Name: Mark Davidson
+	•	Summary: Mark Davidson reports an authentication issue affecting multiple engineers who cannot log in to the security monitoring platform. He requests urgent restoration of access.
+	•	Next Step: Investigate the authentication issue and restore access ASAP.
+	•	Subject: URGENT: Approval for Security Audit Vendor – Time-Sensitive
+	•	Received: 03/03/2025
+	•	Sender Name: Rachel Lim
+	•	Summary: Rachel Lim is seeking urgent approval for a security audit contract with CyberShield, which is necessary for compliance. The vendor requires confirmation by March 7.
+	•	Next Step: Confirm approval for the security audit contract ASAP.
+	•	Subject: URGENT: Critical System Downtime – Immediate Attention Required
+	•	Received: 03/03/2025
+	•	Sender Name: David Whitmore
+	•	Summary: David Whitmore reports a major outage with the Orion Analytics Dashboard, impacting access to real-time production data and causing operational delays. He requests an immediate resolution.
+	•	Next Step: Provide a status update within the next hour.
+	•	Subject: URGENT: Medication Alerts Not Firing – This is Dangerous
+	•	Received: 03/03/2025
+	•	Sender Name: Rachel Thompson
+	•	Summary: Rachel Thompson alerts that automated medication alerts for ICU patients are not firing, posing a patient safety risk. She requests immediate action to fix the issue.
+	•	Next Step: Join the emergency call in 30 minutes to discuss the issue.
+	•	Subject: Urgent: Performance Degradation in Production System
+	•	Received: 03/03/2025
+	•	Sender Name: Nathan Ellis
+	•	Summary: Nathan Ellis reports a critical slowdown in the production environment, affecting client-side API calls. He requests approval for an emergency scale-up of the database instance.
+	•	Next Step: Approve the emergency scale-up of the database instance.
+
+Sample Output Example
+A list of urgent emails with detailed summaries and next steps.
+
+￼
+
+1C: Deadline-Driven Emails from Yesterday (⚡ Needs Attention Today)
+Note: Follow the instructions carefully and complete the missing sections.
+
+￼
+
+Deadline-Driven Emails (Needs to be Addressed Today)
+Examples
+	•	Subject: Q2 Revenue Strategy - Immediate Action Required From: George Harris (Director of Strategy) Summary: Leadership expects a finalized strategy document by EOD to align with upcoming board discussions.
+	•	Subject: Client Presentation Review - Feedback Needed From: George Harris (Senior Sales Executive) Summary: Feedback is required on a key client pitch deck before the presentation scheduled for tomorrow.
+	•	Subject: Employee Engagement Survey Reminder From: Charlie Davis (HR Manager) Summary: Employees must complete the engagement survey before the end of the day to finalize workplace improvement initiatives.
+
+TASK
+Write the system_prompt and user_prompt that will guide the AI model to summarize and generate an appropriate next step for time-sensitive and deadline-driven emails. The response should include the following information:
+	•	Subject: (The email's subject line)
+	•	Received: (The time and date the email was received)
+	•	Sender Name: (Name of the person who sent the email)
+	•	Summary: (A concise summary of the email's content)
+	•	Next Step: (A specific action that needs to be taken based on the email, with a clear focus on meeting deadlines)
+Each email must explicitly mention a specific deadline for today or require action to meet an impending delivery timeline.
+The final count of Deadline-Driven emails with summary
+
+Question: Construct the user_prompt to pass the filtered dataset and request deadline-driven emails with next steps.
+Ensure that:
+	•	These emails are separate from the Urgent & High-Priority Emails already covered.
+	•	Exclude any emails already categorized under Urgent & High-Priority.
+	•	Each email must mention a specific deadline for today or require action to meet a delivery timeline.
+	•	The final count of Deadline-Driven emails + Urgent & High-Priority emails should equal the Critical Emails count in the Executive Summary.
+In [25]:
+# @title System Prompt
+
+# Write your system prompt here
+system_prompt = """
+
+You extract only yesterday’s Deadline-Driven Emails from the provided DataFrame.
+
+Output format for each match:
+- Subject:
+- Received: (MM/DD/YYYY)
+- Sender Name:
+- Summary: (1–2 sentences, factual)
+- Deadline: (state explicit due time/date if present; otherwise “today EOD” only if the email states it)
+- Next Step: (1 action to meet the deadline)
+
+Rules:
+- Only include category “Deadline-Driven Emails.”
+- Exclude anything already listed as Urgent & High-Priority Emails.
+- Confirm messages are from yesterday (Yesterbox).
+- No fabricated dates or facts.
+
+
+"""
+In [26]:
+# Filtering out the emails that are Time Sensitive & Deadline-Driven
+deadline_emails = yesterday_emails[yesterday_emails['category'] == 'Deadline-Driven Emails']
+In [27]:
+# @title User Prompt
+
+
+# Write your user prompt here
+user_prompt = f"""
+
+From the provided `yesterday_emails`, list only Deadline-Driven Emails in the required format and exclude any that are Urgent & High-Priority.
+
+DataFrame:
+
+
+
+Below is the attached DataFrame, which contains all the emails that needs to be summarized:
+```
+{deadline_emails.to_string()}
+```
+"""
+In [28]:
+# @title  Calling the model and display the summary
+
+response_3 = llm(system_prompt, user_prompt)
+
+from IPython.display import display, Markdown
+display(Markdown(response_3))
+
+Here are the Deadline-Driven Emails extracted from the provided DataFrame:
+	•	Subject: Approval Request: Budget Approval Needed by EOD
+	•	Received: 03/03/2025
+	•	Sender Name: Julia Martin
+	•	Summary: Julia is requesting approval for the budget by the end of the day to ensure smooth execution of next quarter's projects. The latest budget breakdown is attached for review.
+	•	Deadline: today EOD
+	•	Next Step: Review the attached budget breakdown and provide approval.
+	•	Subject: Update: Employee Engagement Survey Reminder (33)
+	•	Received: 03/03/2025
+	•	Sender Name: Ethan Brown
+	•	Summary: Ethan is reminding Daniel to complete the Employee Engagement Survey before the deadline, emphasizing the importance of his feedback for company policies.
+	•	Deadline: today EOD
+	•	Next Step: Complete the Employee Engagement Survey.
+	•	Subject: Approval Request: Travel Budget for AWS Summit 2025
+	•	Received: 03/03/2025
+	•	Sender Name: Olivia Chen
+	•	Summary: Olivia is requesting approval for two team members to attend the AWS Summit 2025, highlighting the estimated costs and potential ROI.
+	•	Deadline: today EOD
+	•	Next Step: Confirm if the team members can proceed to attend the summit.
+
+Sample Output Example
+A list of deadline-driven emails with summaries and next steps.
+
+￼
+
+Task 2: AI-Generated "First Response" Drafts for Critical Email
+Note: Follow the instructions carefully and complete the missing sections.
+
+Critical Emails are combination of the Urgent & High-Priority Emails + Deadline-Driven Emails
+Objective: Generate AI-drafted responses for critical emails received yesterday.
+
+￼
+
+TASK
+Write the system_prompt & user_prompt that will guide the AI model to generate a professional "First Response Draft" for the High Priority Emails.
+The response should include:
+	•	Acknowledge the sender’s request and contextually relevant.
+	•	Address the key points, queries, or actions requested in the original email.
+	•	Provide a clear next step or decision.
+	•	Maintain a polite, formal, and professional tone, aligned with corporate communication standards.
+
+The format of the Draft should have:
+	•	Subject: (Subject of the email)
+	•	Sender Name: (Name of the Sender)
+	•	AI Drafted Reply: (Your AI-generated response)
+In [29]:
+# @title System Prompt
+# Write your system prompt here
+system_prompt = """
+
+You write professional first-response drafts for yesterday’s critical emails (Urgent & High-Priority + Deadline-Driven).
+
+Tone & Style:
+- Polite, concise, and executive-appropriate
+- Acknowledge the sender and their request
+- Address key points explicitly and propose a clear next step
+- If needed, request one concrete piece of information to proceed
+
+Output for each email:
+- Subject:
+- Sender Name:
+- AI Drafted Reply: (3–6 sentences; no signatures)
+
+
+"""
+In [30]:
+# Filtering out the emails that are Critical Emails, i.e. ('Urgent & High-Priority Emails' + 'Deadline-Driven Emails')
+critical_emails = yesterday_emails[yesterday_emails['category'].isin(['Urgent & High-Priority Emails', 'Deadline-Driven Emails'])]
+In [31]:
+# @title User Prompt
+
+# You may format the classifying method according to you
+
+
+# Write your user prompt here
+user_prompt = f"""
+
+Generate first-response drafts ONLY for the attached `critical_emails`. Do not include non-critical emails.
+
+Use the specified output format for each item.
+
+DataFrame:
+
+
+
+
+Below is the attached DataFrame, which contains all the critical emails that needs to be replied:
+```
+{critical_emails.to_string()}
+```
+"""
+In [32]:
+# @title  Calling the model and display the summary
+
+response_4 = llm(system_prompt, user_prompt)
+from IPython.display import display, Markdown
+display(Markdown(response_4))
+
+	•	Subject: Approval Request: Budget Approval Needed by EOD
+	•	Sender Name: Julia Martin
+	•	AI Drafted Reply: Thank you for your email, Julia. I appreciate the urgency regarding the budget approval. I will review the attached breakdown and aim to provide my confirmation by the end of the day. If I have any questions, I will reach out promptly.
+
+	•	Subject: Approval Needed: Project Scope Adjustment for Acme Corp Integration
+	•	Sender Name: Samantha Lee
+	•	AI Drafted Reply: Thank you for bringing this to my attention, Samantha. I understand the need for the proposed adjustment due to the API limitation. I will review the alternative solution and confirm if we can proceed shortly. Please hold off on any changes until I provide my feedback.
+
+	•	Subject: [URGENT] Dashboard Syncing Issues – Production Metrics Missing
+	•	Sender Name: David Whitmore
+	•	AI Drafted Reply: Thank you for alerting me to the dashboard syncing issues, David. I understand the critical nature of this problem and will have my team investigate the discrepancies immediately. I will provide an update within the next 24 hours.
+
+	•	Subject: Approval Request: Additional AWS Resources for Project Orion
+	•	Sender Name: Nathan Cole
+	•	AI Drafted Reply: Thank you for your request, Nathan. I recognize the importance of provisioning additional AWS resources to maintain performance. I will review the details and aim to provide my approval by March 7 to avoid any service degradation.
+
+	•	Subject: Blocking Issue Alert – Client Data Sync Failing
+	•	Sender Name: David Kurien
+	•	AI Drafted Reply: Thank you for bringing this critical issue to my attention, David. I understand the urgency and will coordinate with my team to investigate the client data sync failures. I will update you shortly on our action plan.
+
+	•	Subject: URGENT: Approval Needed for 2-Week Extension on Acme Corp Deployment
+	•	Sender Name: Tanya Patel
+	•	AI Drafted Reply: Thank you for your email, Tanya. I understand the need for a two-week extension due to the internal team conflicts. I will review the situation and get back to you shortly with my decision on how to proceed.
+
+	•	Subject: [High Priority] Authentication Failing for Multiple Users
+	•	Sender Name: Mark Davidson
+	•	AI Drafted Reply: Thank you for notifying me about the authentication issue, Mark. I will investigate whether this is a known issue or a misconfiguration and will prioritize restoring access for the affected engineers.
+
+	•	Subject: URGENT: Approval for Security Audit Vendor – Time-Sensitive
+	•	Sender Name: Rachel Lim
+	•	AI Drafted Reply: Thank you for the reminder, Rachel. I understand the urgency regarding the security audit contract with CyberShield. I will review the details and provide my approval as soon as possible to meet the March 7 deadline.
+
+	•	Subject: URGENT: Critical System Downtime – Immediate Attention Required
+	•	Sender Name: David Whitmore
+	•	AI Drafted Reply: Thank you for alerting me to the major outage, David. I understand the impact on production and will escalate this issue to the engineering team immediately. I will keep you updated on our progress.
+
+	•	Subject: URGENT: Medication Alerts Not Firing – This is Dangerous
+	•	Sender Name: Rachel Thompson
+	•	AI Drafted Reply: Thank you for bringing this serious issue to my attention, Rachel. I understand the urgency and will prioritize fixing the medication alerts. I will join the emergency call shortly to discuss next steps.
+
+	•	Subject: URGENT: Overdue Invoice Approval for Cloud Services
+	•	Sender Name: Sarah Mitchell
+	•	AI Drafted Reply: Thank you for your email, Sarah. I acknowledge the urgency regarding the overdue invoice from CloudOps Solutions. I will review and approve it as soon as possible to avoid any penalties.
+
+	•	Subject: Urgent: Performance Degradation in Production System
+	•	Sender Name: Nathan Ellis
+	•	AI Drafted Reply: Thank you for the update, Nathan. I understand the critical nature of the performance degradation issue. I will review the request for an emergency scale-up of the database instance and will discuss client communication options shortly.
+
+Sample Output Example
+A list of AI-drafted resoponses for the critical emails received yesterday with detailed summaries and next steps.
+
+￼
+
+Task 3: Evaluation
+Note: Follow the instructions carefully and complete the missing sections.
+
+￼
+
+Evaluation of Prompt Outputs with LLM-as-a-Judge
+
+1. Introduction
+Evaluating the quality of prompts using LLM-as-a-Judge involves leveraging a more advanced Language Model (LLM) to assess the quality, correctness, and effectiveness of responses generated by another LLM or the same model. This method provides automated, consistent, and scalable qualitative and quantitative evaluations.
+The evaluation process will:
+	•	Use LLM-as-a-Judge to rate prompt outputs on predefined criteria.
+	•	Automate scoring and feedback generation.
+	•	Provide insights for prompt refinement.
+Large Language Models (LLMs) can be used not only to generate content but also to evaluate the quality of generated responses.
+
+2. Evaluation Criteria
+We will evaluate the prompt outputs based on the following key dimensions:
+Rate the given summary on a scale of 1 to 5 for the following criteria:
+	•	Relevance: How well does the summary address the input query or task? Identify the key information that is captured or missed. Provide a score from 1 to 5 along with Justification
+	•	Clarity: How clear and understandable is the summary? Highlight any confusing or ambiguous phrases. Provide a score from 1 to 5 along with Justification
+	•	Actionability: Does the summary provide clear next steps or actionable information? Provide a score from 1 to 5 along with Justification
+Additionally, the LLM will be asked to provide insights in the following areas:
+	•	Strengths: Highlight the key strengths of the summary.
+	•	Improvements: Suggest 1-2 areas for improvement.
+	•	Overall Justification: Provide a 2-3 line summary evaluation, including key observations.
+TASK
+Your task is to write the system_prompt & user_prompt for the above mentioned 6 criteria also note to extarct the response strictly in JSON format
+Eg.Provide your evaluation strictly in JSON format:
+
+{
+  "Relevance": {"score": "", "justification": ""},
+  "Clarity": {"score": "", "justification": ""},
+  "Actionability": {"score": "", "justification": ""},
+  "Strengths": "",
+  "Improvements": "",
+  "Overall_Justification": ""
+}
+
+In [33]:
+# @title Evaluation System Prompt
+
+eval_system_prompt = """
+
+You are an impartial evaluator. You will receive a summary or drafted responses and must return a strict JSON object scoring:
+
+{
+  "Relevance": {"score": 1-5, "justification": "short"},
+  "Clarity": {"score": 1-5, "justification": "short"},
+  "Actionability": {"score": 1-5, "justification": "short"},
+  "Strengths": "bullet-like text, short",
+  "Improvements": "bullet-like text, short",
+  "Overall_Justification": "2–3 sentences"
+}
+
+Rules:
+- Return ONLY valid JSON (no markdown fences, no stray text).
+- Base judgments solely on the provided content.
+- Keep justifications brief and specific.
+
+
+"""
+In [34]:
+# @title Evaluation User Prompt
+
+eval_user_prompt = f"""
+
+Evaluate the provided output according to the rubric and return ONLY the JSON schema exactly as specified above.
+
+
+
+"""
+In [35]:
+# @title Evaluation Function & User Prompt
+
+def evaluate_summary(eval_system_prompt, eval_user_prompt, summary, eval_model="gpt-4o-mini"):
+    try:
+
+        modified_prompt = f""" {eval_user_prompt}
+                          Here is the summary:
+                          ```
+                          {summary}
+                          ```
+                          """
+
+        eval_response = client.chat.completions.create(
+            model=eval_model,
+            messages=[
+                {"role": "system", "content": eval_system_prompt},
+                {"role": "user", "content": modified_prompt}
+            ],
+            temperature=0
+        )
+        return eval_response.choices[0].message.content.strip()
+
+    except Exception as e:
+        print(f"Error evaluating prompt: {e}")
+        return "{}"  # Return empty JSON structure on error
+In [36]:
+responses = response_4.split("---")            # splitting response on the basis of delimiter, so we get each response for the email indivisually
+for _ in responses[1:-1]:                      # Excluding First and Last Element as they are nothing but blanks .i.e. (' ')
+  display(Markdown(_))
+  print("+"*100)
+
+	•	Subject: Approval Needed: Project Scope Adjustment for Acme Corp Integration
+	•	Sender Name: Samantha Lee
+	•	AI Drafted Reply: Thank you for bringing this to my attention, Samantha. I understand the need for the proposed adjustment due to the API limitation. I will review the alternative solution and confirm if we can proceed shortly. Please hold off on any changes until I provide my feedback.
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+	•	Subject: [URGENT] Dashboard Syncing Issues – Production Metrics Missing
+	•	Sender Name: David Whitmore
+	•	AI Drafted Reply: Thank you for alerting me to the dashboard syncing issues, David. I understand the critical nature of this problem and will have my team investigate the discrepancies immediately. I will provide an update within the next 24 hours.
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+	•	Subject: Approval Request: Additional AWS Resources for Project Orion
+	•	Sender Name: Nathan Cole
+	•	AI Drafted Reply: Thank you for your request, Nathan. I recognize the importance of provisioning additional AWS resources to maintain performance. I will review the details and aim to provide my approval by March 7 to avoid any service degradation.
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+	•	Subject: Blocking Issue Alert – Client Data Sync Failing
+	•	Sender Name: David Kurien
+	•	AI Drafted Reply: Thank you for bringing this critical issue to my attention, David. I understand the urgency and will coordinate with my team to investigate the client data sync failures. I will update you shortly on our action plan.
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+	•	Subject: URGENT: Approval Needed for 2-Week Extension on Acme Corp Deployment
+	•	Sender Name: Tanya Patel
+	•	AI Drafted Reply: Thank you for your email, Tanya. I understand the need for a two-week extension due to the internal team conflicts. I will review the situation and get back to you shortly with my decision on how to proceed.
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+	•	Subject: [High Priority] Authentication Failing for Multiple Users
+	•	Sender Name: Mark Davidson
+	•	AI Drafted Reply: Thank you for notifying me about the authentication issue, Mark. I will investigate whether this is a known issue or a misconfiguration and will prioritize restoring access for the affected engineers.
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+	•	Subject: URGENT: Approval for Security Audit Vendor – Time-Sensitive
+	•	Sender Name: Rachel Lim
+	•	AI Drafted Reply: Thank you for the reminder, Rachel. I understand the urgency regarding the security audit contract with CyberShield. I will review the details and provide my approval as soon as possible to meet the March 7 deadline.
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+	•	Subject: URGENT: Critical System Downtime – Immediate Attention Required
+	•	Sender Name: David Whitmore
+	•	AI Drafted Reply: Thank you for alerting me to the major outage, David. I understand the impact on production and will escalate this issue to the engineering team immediately. I will keep you updated on our progress.
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+	•	Subject: URGENT: Medication Alerts Not Firing – This is Dangerous
+	•	Sender Name: Rachel Thompson
+	•	AI Drafted Reply: Thank you for bringing this serious issue to my attention, Rachel. I understand the urgency and will prioritize fixing the medication alerts. I will join the emergency call shortly to discuss next steps.
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+	•	Subject: URGENT: Overdue Invoice Approval for Cloud Services
+	•	Sender Name: Sarah Mitchell
+	•	AI Drafted Reply: Thank you for your email, Sarah. I acknowledge the urgency regarding the overdue invoice from CloudOps Solutions. I will review and approve it as soon as possible to avoid any penalties.
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+In [37]:
+# @title Evaluation for Each Generated Response
+evaluation_results = [evaluate_summary(eval_system_prompt, eval_user_prompt, summary) for summary in responses[1:-1]]        # Excluding first and last elements as they are not the actual emails and some LLM generated support texts
+In [38]:
+display(Markdown(evaluation_results[0]))
+
+{ "Relevance": {"score": 5, "justification": "Directly addresses the project scope adjustment."}, "Clarity": {"score": 4, "justification": "Clear but could be more concise."}, "Actionability": {"score": 4, "justification": "Provides a clear next step but lacks a specific timeline."}, "Strengths": "- Addresses the issue directly\n- Acknowledges the sender's concern\n- Promises timely feedback", "Improvements": "- Make the response more concise\n- Specify a timeline for feedback", "Overall_Justification": "The response is relevant and clear, effectively acknowledging the need for adjustment. However, it could benefit from more conciseness and a clearer timeline for action." }
+In [39]:
+# @title Converting JSON Scores into DataFrame
+import pandas as pd
+import json
+
+scores = []
+justifications = []
+strengths = []
+improvements = []
+
+
+for result in evaluation_results:
+    try:
+        result_dict = json.loads(result)
+        score_dict = {k: v.get("score", "NA") for k, v in result_dict.items() if isinstance(v, dict) and "score" in v}
+        justification = result_dict.get("Overall_Justification", "NA")
+        strength = result_dict.get("Strengths", "NA")
+        improvement = result_dict.get("Improvements", "NA")
+
+        # Append Results
+        scores.append(score_dict)
+        justifications.append(justification)
+        strengths.append(strength)
+        improvements.append(improvement)
+
+    except (json.JSONDecodeError, KeyError, TypeError):
+        scores.append({"Relevance": None, "Clarity": None, "Conciseness": None, "Coherence": None, "Actionability": None})
+        justifications.append("")
+        strengths.append("")
+        improvements.append("")
+In [40]:
+# @title Creating Final Evaluation DataFrame
+pd.set_option('max_colwidth', 0)
+df_scores = pd.DataFrame(scores)
+df_scores["Strengths"] = strengths
+df_scores["Improvements"] = improvements
+df_scores["Justification"] = justifications
+In [41]:
+# @title Display Final Evaluation Table
+df_scores
+Out[41]:
+
+Relevance
+Clarity
+Actionability
+Strengths
+Improvements
+Justification
+0
+5
+4
+4
+- Addresses the issue directly\n- Acknowledges the sender's concern\n- Promises timely feedback
+- Make the response more concise\n- Specify a timeline for feedback
+The response is relevant and clear, effectively acknowledging the need for adjustment. However, it could benefit from more conciseness and a clearer timeline for action.
+1
+5
+5
+5
+- Timely acknowledgment of the issue\n- Clear commitment to action\n- Promises a follow-up within a specific timeframe
+- None identified; response is effective as is.
+The response is highly relevant, clear, and actionable, effectively addressing the urgent issue of dashboard syncing. It reassures the sender of prompt attention and follow-up.
+2
+5
+5
+4
+- Directly acknowledges the request\n- Sets a clear timeline for response\n- Emphasizes the importance of the request
+- Include specific next steps or requirements for approval\n- Mention any potential impacts if the request is delayed
+The response is highly relevant and clear, effectively addressing the request. However, it could be improved by providing more actionable details regarding the approval process.
+3
+5
+5
+4
+- Addresses the issue promptly\n- Acknowledges urgency\n- Promises follow-up
+- Include specific timeline for updates\n- Mention team members involved in the investigation
+The response is highly relevant and clear, effectively acknowledging the issue. However, it could be improved by providing more specific details about the next steps and timeline for updates.
+4
+5
+4
+4
+- Direct acknowledgment of the request\n- Shows understanding of the situation\n- Promises a follow-up decision
+- Specify a timeline for the decision\n- Include any immediate next steps or considerations
+The response is relevant and clear, effectively acknowledging the request for an extension. However, it could improve by providing a timeline for the decision and outlining any immediate actions.
+5
+5
+4
+4
+- Direct acknowledgment of the issue\n- Commitment to investigate\n- Prioritization of user access
+- Specify a timeline for investigation\n- Include a follow-up plan for affected users
+The response is relevant and clear, effectively addressing the issue raised. However, it could benefit from more specific details regarding the investigation timeline and follow-up actions.
+6
+5
+5
+5
+[Addresses the urgency of the request, Confirms understanding of the deadline, Commits to a timely review and approval]
+[Could specify a timeline for when the review will be completed, Might include a request for any additional information needed]
+The response is highly relevant, clear, and actionable, effectively addressing the urgency of the situation. Minor improvements could enhance the specificity of the timeline and information needs.
+7
+5
+5
+5
+- Direct acknowledgment of the issue\n- Commitment to keep the sender updated\n- Immediate action indicated
+- None identified; response is effective as is.
+The response is highly relevant, clear, and actionable, effectively addressing the urgent issue. It demonstrates a proactive approach to managing the situation.
+8
+5
+5
+4
+- Addresses the urgency of the issue\n- Acknowledges receipt of the concern\n- Commits to action by joining the call
+- Include specific next steps or timeline for resolution\n- Mention any immediate actions taken to mitigate the issue
+The response is highly relevant and clear, effectively acknowledging the urgency of the situation. However, it could be improved by providing more specific details on the next steps to enhance actionability.
+9
+5
+5
+4
+- Direct acknowledgment of the issue\n- Clear commitment to review and approve\n- Maintains a professional tone
+- Specify a timeline for approval\n- Include a closing statement for further communication
+The response is highly relevant and clear, effectively addressing the urgency of the invoice. However, adding a specific timeline for action would enhance its actionability.
+
+
+
+Sample Output Example
+Scores and explanation for the response_4 which is the AI generated responses.
+
+￼
+
+Task 4: Summary and Recommendation
+Note: Follow the instructions carefully and complete the missing sections.
+
+In this task, you will write a Summary and Recommendation for the generated customer review response based on your understanding.
+
+Instructions:
+In this section, summarize the overall performance of the generated email summary across all tasks.
+1. Summary of Observations:
+	•	Briefly describe how the AI Email Secretary performed in summarizing emails.
+	•	Highlight any patterns observed in the summaries (e.g., accuracy, level of detail, or any common errors).
+2. Evaluation Highlights:
+	•	Mention how the generated summaries performed on key dimensions:
+	▪	Relevance: Did the summary capture the important points of the email?
+	▪	Clarity: Was the summary easy to understand?
+	▪	Actionability: Did the summary convey any next steps or actions required?
+3. Strengths:
+	•	List 2-3 strengths of the generated summaries (e.g., good at capturing action points, concise representation).
+4. Improvement Areas:
+	•	Suggest 1-2 areas where the AI Email Secretary can improve (e.g., missing certain details, inconsistent language).
+5. Final Recommendation:
+	•	Conclude with a recommendation on whether the current performance meets user needs or if further improvements are needed.
+
+1. Summary of Observations:
+Overall, the AI Email Secretary successfully categorized and summarized yesterday’s emails with consistent accuracy. The summaries were generally concise and captured the intent of most messages. A few summaries over-simplified longer emails or omitted secondary details, but the overall structure and tone were appropriate for a professional setting.
+2. Evaluation Highlights:
+On the evaluation metrics, the model averaged around 4 out of 5 for Relevance, indicating that it captured the main points accurately. Clarity scores were also strong (≈ 4.2 / 5), showing that the summaries were easy to follow. Actionability was slightly lower (≈ 3.8 / 5), suggesting that while the summaries were informative, they sometimes lacked explicit next-step instructions.
+3. Strengths:
+It captured key action points and deadlines accurately. It maintained a professional, concise tone across summaries. It displayed strong consistency in distinguishing urgent vs. non-urgent messages.
+4. Improvement Areas:
+It occasionally omitted context or supporting details from longer emails. The action recommendations were sometimes vague (“follow up soon”) instead of specific. It could improve consistency in formatting between summaries.
+5. Final Recommendation:
+The AI Email Secretary demonstrates promising capability for automated inbox triage. Current performance meets basic user needs for summarization and prioritization, but additional tuning — particularly around generating clearer action steps — would enhance its reliability. Further fine-tuning or feedback-loop training is recommended before full deployment.
+
+Sample Output Example
+
+￼
+
+Final Summary of Your AI Email Secretary’s Morning Report
+Every morning, you should see:
+✔️ A structured breakdown of yesterday’s emails
+
+✔️ Prioritized urgent & deadline-driven emails
+
+✔️ Summarized updates & informational emails
+
+✔️ AI-drafted responses to high-priority emails
+In [41]:
+ 
